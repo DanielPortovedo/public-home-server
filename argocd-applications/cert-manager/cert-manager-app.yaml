@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-application
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: v1.19.3
+    helm:
+      values: |
+        crds:
+          enabled: true
+
+        # Disabled for the moment
+        # To be seen if it is useful
+        prometheus:
+          enabled: false
+          servicemonitor:
+            enabled: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true

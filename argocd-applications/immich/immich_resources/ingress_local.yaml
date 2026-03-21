@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: immich-server-local
+  namespace: immich
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: HostRegexp(`^192\.168\.\d{1,3}\.\d{1,3}$`)
+      priority: 20
+      services:
+        - name: immich-application-server
+          port: 2283

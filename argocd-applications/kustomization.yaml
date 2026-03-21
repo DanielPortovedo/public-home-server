@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ./argo/argocd-self.yaml
+
+  # cert-manager
+  - ./cert-manager/cert-manager-app.yaml
+  - ./cert-manager/cert-manager-resources-app.yaml
+
+  # immich
+  - ./immich/immich_app.yaml
+  - ./immich/immich_resources_app.yaml
+
+  # minecraft (It's enabled only when playing)
+  # - ./minecraft/minecraft_app.yaml
+  # - ./minecraft/minecraft_resources_app.yaml
+
+  # monitoring
+  - ./monitoring/kube_prometheus_stack_app.yaml
+  - ./monitoring/kube_prometheus_stack_resources_app.yaml
+  - ./monitoring/fail2ban_exporter_app.yaml
+
+  # pihole
+  - ./pihole/pihole_resources_app.yaml
+  - ./pihole/pihole_app.yaml
+
+  # Postgres
+  - ./postgres/immich_pg_db_app.yaml
+  - ./postgres/immich_pg_db_resources_app.yaml

@@ -1,0 +1,86 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: pihole-application
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://mojo2600.github.io/pihole-kubernetes/
+    chart: pihole
+    targetRevision: 2.35.0
+
+    helm:
+      values: |
+        image:
+          tag: "2026.02.0"
+
+        webHttp: "8080"
+
+        webHttps: "8443"
+
+        hostNetwork: "true"
+
+        serviceDhcp:
+          enabled: false
+
+        serviceDns:
+          mixedService: true
+
+        serviceWeb:
+          http:
+            port: 8080
+
+          https:
+            port: 8443
+
+        probes:
+          liveness:
+            command:
+              - /bin/sh
+              - -c
+              - "curl --silent http://localhost:8080/api/info/login | jq 'if (.dns | not) then halt_error(1) end'"
+
+          readiness:
+            command:
+              - /bin/sh
+              - -c
+              - "curl --silent http://localhost:8080/api/info/login | jq 'if (.dns | not) then halt_error(1) end'"          
+
+        ingress:
+          enabled: true
+          ingressClassName: traefik
+          
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt
+
+          tls:
+            - hosts:
+              - pihole.dani-porto.com
+              secretName: pihole-cert
+
+          hosts:
+            - pihole.dani-porto.com
+
+        persistentVolumeClaim:
+          enabled: true
+          
+          existingClaim: "pihole-pvc"
+
+        admin:
+          existingSecret: "pihole-admin"
+        
+        monitoring:
+          podMonitor:
+            enabled: true
+
+          sidecar:
+            enabled: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pihole
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true

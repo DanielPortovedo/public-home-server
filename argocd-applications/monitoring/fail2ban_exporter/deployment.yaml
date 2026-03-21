@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fail2ban-metrics-exporter
+  labels:
+    app: fail2ban-metrics-exporter
+spec:
+  selector:
+    matchLabels:
+      app: fail2ban-metrics-exporter
+  template:
+    metadata:
+      labels:
+        app: fail2ban-metrics-exporter
+    spec:
+      containers:
+      - name: fail2ban-metrics-exporter
+        image: registry.gitlab.com/hctrdev/fail2ban-prometheus-exporter:latest
+        ports:
+        - containerPort: 9191
+          name: metrics
+        volumeMounts:
+          - name: fail2ban-run
+            mountPath: /var/run/fail2ban
+            readOnly: true
+      volumes:
+        - name: fail2ban-run
+          hostPath:
+            path: /var/run/fail2ban

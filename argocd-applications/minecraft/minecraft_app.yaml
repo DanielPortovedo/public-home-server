@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minecraft-application
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://itzg.github.io/minecraft-server-charts/
+    chart: minecraft
+    targetRevision: 5.0.0
+
+    helm:
+      values: |
+        resources:
+          requests:
+            memory: 512Mi
+            cpu: 500m
+          limits:
+            memory: 6Gi
+
+        minecraftServer:
+          eula: "TRUE"
+          difficulty: normal
+          # A comma-separated list of player names to whitelist.
+          whitelist: danymen
+          maxPlayers: 4
+          # If there is lag, reduce this to 8 (default is 10)
+          viewDistance: default
+          motd: "Welcome"
+          # If true, enable player-vs-player damage.
+          pvp: true
+          worldSaveName: kubernetes_world
+          serviceType: NodePort
+          nodePort: 31525
+        persistence:
+          dataDir:
+            enabled: true
+            existingClaim: minecraft-pvc
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: minecraft
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true

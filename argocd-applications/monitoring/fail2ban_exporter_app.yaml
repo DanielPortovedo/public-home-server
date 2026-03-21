@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fail2ban-metrics-exporter
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/DanielPortovedo/home_server'
+    path: argocd-applications/monitoring/fail2ban_exporter
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
