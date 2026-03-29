@@ -19,6 +19,13 @@ spec:
         ports:
         - containerPort: 9191
           name: metrics
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
         volumeMounts:
           - name: fail2ban-run
             mountPath: /var/run/fail2ban

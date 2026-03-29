@@ -3,4 +3,6 @@ kind: ConfigMap
 metadata:
   name: argocd-cmd-params-cm
 data:
+  # Insecure mode is intentional: Traefik terminates TLS externally and forwards
+  # plain HTTP internally. ArgoCD itself does not need to handle TLS.
   server.insecure: "true"
