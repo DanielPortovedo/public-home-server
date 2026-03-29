@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - ./immich_pg_database.yaml
+  - ./postgres-network-policy.yaml

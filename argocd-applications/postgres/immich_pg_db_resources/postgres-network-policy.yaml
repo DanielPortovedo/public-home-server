@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-ingress-policy
+  namespace: immich
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: immich-db
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow all Immich components to reach postgres
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - server
+                  - machine-learning
+                  - valkey
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow the CNPG operator (runs in cnpg-system) to manage the cluster
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - protocol: TCP
+          port: 5432
