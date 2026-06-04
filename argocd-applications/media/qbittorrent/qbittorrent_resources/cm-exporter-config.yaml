@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qbittorrent-exporter-config
+  namespace: media
+data:
+  QBITTORRENT_HOST: "localhost"
+  QBITTORRENT_PORT: "8080"
+  EXPORTER_PORT: "8000"
+  METRICS_USERNAME: ""  # set if you enable auth

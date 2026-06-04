@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: qbittorrent-application
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/DanielPortovedo/home_server'
+    path: argocd-applications/media/qbittorrent/qbittorrent_resources
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: media
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true

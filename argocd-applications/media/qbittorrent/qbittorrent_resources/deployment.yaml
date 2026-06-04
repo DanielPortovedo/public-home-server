@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qbittorrent
+  namespace: media
+  labels:
+    app.kubernetes.io/name: qbittorrent
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qbittorrent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: qbittorrent
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        # VPN sidecar — all containers in the pod share its network namespace
+        - name: gluetun
+          image: qmcgaw/gluetun:v3
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: "nordvpn"
+            - name: VPN_TYPE
+              value: "openvpn"
+            - name: OPENVPN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-nordvpn
+                  key: OPENVPN_USER
+            - name: OPENVPN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-nordvpn
+                  key: OPENVPN_PASSWORD
+            - name: SERVER_COUNTRIES
+              value: "Switzerland"
+            - name: TZ
+              value: "Europe/Zurich"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: bt-tcp
+              containerPort: 53412
+              protocol: TCP
+            - name: bt-udp
+              containerPort: 53412
+              protocol: UDP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            exec:
+              command:
+                - /gluetun-entrypoint
+                - healthcheck
+            initialDelaySeconds: 30
+            periodSeconds: 60
+
+        - name: qbittorrent
+          image: lscr.io/linuxserver/qbittorrent:latest
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "Europe/Zurich"
+            - name: WEBUI_PORT
+              value: "8080"
+            - name: TORRENTING_PORT
+              value: "53412"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: downloads
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+        # Metrics exporter — also shares the netns
+        # - name: exporter
+        #   image: esanchezm/prometheus-qbittorrent-exporter:latest
+        #   env:
+        #     - name: QBITTORRENT_HOST
+        #       value: "localhost"
+        #     - name: QBITTORRENT_PORT
+        #       value: "8080"
+        #     - name: EXPORTER_PORT
+        #       value: "8000"
+        #     - name: QBITTORRENT_USER
+        #       valueFrom:
+        #         secretKeyRef:
+        #           name: qbittorrent-credentials
+        #           key: QBITTORRENT_USERNAME
+        #     - name: QBITTORRENT_PASSWORD
+        #       valueFrom:
+        #         secretKeyRef:
+        #           name: qbittorrent-credentials
+        #           key: QBITTORRENT_PASSWORD
+        #   resources:
+        #     requests:
+        #       cpu: 10m
+        #       memory: 32Mi
+        #     limits:
+        #       cpu: 100m
+        #       memory: 128Mi
+
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: qbittorrent-config-pvc
+        - name: downloads
+          persistentVolumeClaim:
+            claimName: qbittorrent-downloads-pvc

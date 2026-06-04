@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jellyfin-application
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://jellyfin.github.io/jellyfin-helm
+    chart: jellyfin
+    targetRevision: 2.7.0
+    helm:
+      values: |
+        ingress:
+          enabled: true
+          className: "traefik"
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt
+          hosts:
+            - host: jellyfin.dani-porto.com
+              paths:
+                - path: /
+                  pathType: ImplementationSpecific
+          tls:
+            - hosts:
+                - jellyfin.dani-porto.com
+              secretName: jellyfin-cert
+
+        persistence:
+          config:
+            existingClaim: jellyfin-config-pvc
+          media:
+            existingClaim: jellyfin-movies-pvc
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: jellyfin
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true

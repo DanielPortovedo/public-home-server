@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prowlarr
+  namespace: media
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - prowlarr.dani-porto.com
+      secretName: prowlarr-cert
+  rules:
+    - host: prowlarr.dani-porto.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prowlarr
+                port:
+                  name: http

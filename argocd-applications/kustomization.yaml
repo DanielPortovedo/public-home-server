@@ -4,6 +4,10 @@ kind: Kustomization
 resources:
   - ./argo/argocd-self.yaml
 
+  # VAULT
+  #- ./vault/vault.yaml
+  #- ./vault/vault_traefik_ingress.yaml
+
   # cert-manager
   - ./cert-manager/cert-manager-app.yaml
   - ./cert-manager/cert-manager-resources-app.yaml
@@ -12,14 +16,25 @@ resources:
   - ./immich/immich_app.yaml
   - ./immich/immich_resources_app.yaml
 
-  # minecraft (It's enabled only when playing)
+  # media
+  ## jellyfin
+  - ./media/jellyfin/jellyfin_app.yaml
+  - ./media/jellyfin/jellyfin_resources_app.yaml
+  ## qbittorrent
+  - ./media/qbittorrent/qbittorrent_app.yaml
+  ## prowlarr
+  - ./media/prowlarr/prowlarr_app.yaml
+
+  ## radarr
+  - ./media/radarr/radarr_app.yaml
+  # minecraft
   # - ./minecraft/minecraft_app.yaml
   # - ./minecraft/minecraft_resources_app.yaml
 
   # monitoring
   - ./monitoring/kube_prometheus_stack_app.yaml
   - ./monitoring/kube_prometheus_stack_resources_app.yaml
-  - ./monitoring/fail2ban_exporter_app.yaml
+  - ./monitoring/fail2ban_exporter.yaml
 
   # pihole
   - ./pihole/pihole_resources_app.yaml
