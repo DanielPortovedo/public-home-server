@@ -226,7 +226,7 @@ defaultRules:
   ## Additional labels for PrometheusRule alerts
   additionalRuleLabels: {}
 
-  ## Additional annotations for PrometheusRule alerts
+  ## Additional annotations for specific PrometheusRule alerts by alert name
   additionalRuleAnnotations: {}
 
   ## Additional labels for specific PrometheusRule alert groups
@@ -989,7 +989,7 @@ alertmanager:
     image:
       registry: quay.io
       repository: prometheus/alertmanager
-      tag: v0.32.1
+      tag: v0.33.0
       sha: ""
       pullPolicy: IfNotPresent
 
@@ -1196,7 +1196,7 @@ alertmanager:
         type: RuntimeDefault
 
     ## Use the host's user namespace for Alertmanager pods.
-    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/
     hostUsers: ~
 
     ## DNS configuration for Alertmanager.
@@ -1220,7 +1220,7 @@ alertmanager:
     containers: []
     # containers:
     # - name: oauth-proxy
-    #   image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
+    #   image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
     #   args:
     #   - --upstream=http://127.0.0.1:9093
     #   - --http-address=0.0.0.0:8081
@@ -1612,24 +1612,23 @@ grafana:
 
     # Path to use for scraping metrics. Might be different if server.root_url is set
     # in grafana.ini
-    path: "/metrics"
+    # path: /metrics
 
     #  namespace: monitoring  (defaults to use the namespace this chart is deployed to)
 
     # labels for the ServiceMonitor
-    labels: {}
+    # labels: {}
 
-    # Scrape interval. If not set, the Prometheus default scrape interval is used.
-    #
-    interval: ""
-    scheme: http
-    tlsConfig: {}
-    scrapeTimeout: 30s
+    # Extra scrape settings.
+    # interval: ""
+    # scheme: http
+    # tlsConfig: {}
+    # scrapeTimeout: 30s
 
     ## RelabelConfigs to apply to samples before scraping
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api-reference/api.md#relabelconfig
     ##
-    relabelings: []
+    # relabelings: []
     # - sourceLabels: [__meta_kubernetes_pod_node_name]
     #   separator: ;
     #   regex: ^(.*)$
@@ -2945,6 +2944,13 @@ prometheusOperator:
       ## Decrease log verbosity to errors only
       # logLevel: error
 
+      ## PromQL parser options to enable for the admission webhook when validating PrometheusRule resources.
+      ## The options are passed to the prometheus-operator admission-webhook binary as a comma-separated --promql-options value.
+      ## Requires prometheus-operator admission-webhook v0.91.0 or newer.
+      ## Valid values: experimental-functions, duration-expression-parsing, extended-range-selectors, binop-fill-modifiers.
+      ##
+      promqlOptions: []
+
 
       ## Liveness probe
       ##
@@ -3045,7 +3051,7 @@ prometheusOperator:
       image:
         registry: ghcr.io
         repository: jkroepke/kube-webhook-certgen
-        tag: 1.8.3
+        tag: 1.8.4
         sha: ""
         pullPolicy: IfNotPresent
       resources: {}
@@ -3390,7 +3396,7 @@ prometheusOperator:
       type: RuntimeDefault
 
   ## Setup hostUsers for prometheus-operator
-  ## ref: https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/
   hostUsers: ~
 
   ## Container-specific security context configuration
@@ -4205,7 +4211,7 @@ prometheus:
     image:
       registry: quay.io
       repository: prometheus/prometheus
-      tag: v3.11.3-distroless
+      tag: v3.12.0-distroless
       sha: ""
       pullPolicy: IfNotPresent
 
@@ -4727,7 +4733,7 @@ prometheus:
     containers: []
     # containers:
     # - name: oauth-proxy
-    #   image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.2
+    #   image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
     #   args:
     #   - --upstream=http://127.0.0.1:9090
     #   - --http-address=0.0.0.0:8081
@@ -4848,7 +4854,7 @@ prometheus:
     hostNetwork: false
 
     ## Use the host's user namespace for Prometheus pods.
-    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/
     hostUsers: ~
 
     # HostAlias holds the mapping between IP and hostnames that will be injected
@@ -5582,7 +5588,7 @@ thanosRuler:
         type: RuntimeDefault
 
     ## Use the host's user namespace for ThanosRuler pods.
-    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/user-namespaces/
     hostUsers: ~
 
     ## ListenLocal makes the ThanosRuler server listen on loopback, so that it does not bind against the Pod IP.

@@ -4,13 +4,12 @@ kind: Kustomization
 resources:
   - ./argo/argocd-self.yaml
 
-  # VAULT
-  #- ./vault/vault.yaml
-  #- ./vault/vault_traefik_ingress.yaml
-
   # cert-manager
   - ./cert-manager/cert-manager-app.yaml
   - ./cert-manager/cert-manager-resources-app.yaml
+
+  # home-assistant
+  # - ./home-assistant/home_assistant_app.yaml
 
   # immich
   - ./immich/immich_app.yaml
@@ -23,10 +22,10 @@ resources:
   ## qbittorrent
   - ./media/qbittorrent/qbittorrent_app.yaml
   ## prowlarr
-  - ./media/prowlarr/prowlarr_app.yaml
+  # - ./media/prowlarr/prowlarr_app.yaml
 
   ## radarr
-  - ./media/radarr/radarr_app.yaml
+  # - ./media/radarr/radarr_app.yaml
   # minecraft
   # - ./minecraft/minecraft_app.yaml
   # - ./minecraft/minecraft_resources_app.yaml
@@ -36,10 +35,13 @@ resources:
   - ./monitoring/kube_prometheus_stack_resources_app.yaml
   - ./monitoring/fail2ban_exporter.yaml
 
+  # nextcloud
+  - ./nextcloud/next_cloud_app.yaml
+
   # pihole
   - ./pihole/pihole_resources_app.yaml
   - ./pihole/pihole_app.yaml
 
   # Postgres
-  - ./postgres/immich_pg_db_app.yaml
-  - ./postgres/immich_pg_db_resources_app.yaml
+  - ./postgres/pg_db_operator_app.yaml
+  - ./postgres/pg_dbs_resources_app.yaml

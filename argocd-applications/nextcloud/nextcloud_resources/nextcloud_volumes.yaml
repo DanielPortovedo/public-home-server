@@ -1,0 +1,32 @@
+# Nextcloud VOLUMES
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nextcloud-pv
+  namespace: nextcloud
+  labels:
+    app.kubernetes.io/name: nextcloud-pv
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  hostPath:
+    path: /opt/nextcloud
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-pvc
+  namespace: nextcloud
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: ""
+  volumeName: nextcloud-pv

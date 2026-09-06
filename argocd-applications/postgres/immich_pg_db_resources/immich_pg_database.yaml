@@ -17,6 +17,7 @@ spec:
 
   bootstrap:
     initdb:
+      # TODO: Use managed extensions (pg 18)
       postInitSQL:
         # Commands based on: https://immich.app/docs/administration/postgres-standalone/#without-superuser-permission
         - CREATE EXTENSION IF NOT EXISTS vchord CASCADE;

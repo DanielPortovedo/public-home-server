@@ -1,0 +1,77 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matter-server
+  namespace: home-assistant
+  labels:
+    app.kubernetes.io/name: matter-server
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate            # never two pods fighting over :5580
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: matter-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: matter-server
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      securityContext:
+        appArmorProfile:
+          type: Unconfined    # Kubernetes >= 1.30
+      containers:
+        - name: matter-server
+          image: ghcr.io/home-assistant-libs/python-matter-server:stable
+          args:
+            - --storage-path
+            - /data
+            - --port
+            - "5580"
+            - --log-level
+            - info
+          ports:
+            - name: ws
+              containerPort: 5580
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            tcpSocket:
+              port: 5580
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 5580
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: matter-server-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: matter-server
+  namespace: home-assistant
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: matter-server
+  ports:
+    - name: ws
+      port: 5580
+      targetPort: 5580
+      protocol: TCP

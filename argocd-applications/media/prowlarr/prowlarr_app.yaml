@@ -5,10 +5,17 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: 'https://github.com/DanielPortovedo/home_server'
-    path: argocd-applications/media/prowlarr/prowlarr_resources
-    targetRevision: HEAD
+  sources:
+    # Prowlarr
+    - repoURL: 'https://github.com/DanielPortovedo/home_server'
+      path: argocd-applications/media/prowlarr/prowlarr_resources
+      targetRevision: HEAD
+
+    # Flaresolverr
+    - repoURL: 'https://github.com/DanielPortovedo/home_server'
+      path: argocd-applications/media/flaresolverr/flaresolverr_resources
+      targetRevision: HEAD
+
   destination:
     server: https://kubernetes.default.svc
     namespace: media

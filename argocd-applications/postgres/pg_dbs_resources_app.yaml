@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: pg-dbs-resources
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - list:
+      elements:
+      - name: immich
+      - name: nextcloud
+  template:
+    metadata:
+      name: '{{.name}}-pg-db-resources'
+    spec:
+      project: default
+      source:
+        repoURL: 'https://github.com/DanielPortovedo/home_server'
+        path: 'argocd-applications/postgres/{{.name}}_pg_db_resources'
+        targetRevision: HEAD
+
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.name}}'

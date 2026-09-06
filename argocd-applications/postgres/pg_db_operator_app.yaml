@@ -1,14 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: immich-pg-db-resources
+  name: pg-db-operator
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/DanielPortovedo/home_server'
-    path: argocd-applications/postgres/immich_pg_db_resources
-    targetRevision: HEAD
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: cloudnative-pg
+    targetRevision: 0.26.1
   destination:
     server: https://kubernetes.default.svc
     namespace: cnpg-system
@@ -16,4 +16,3 @@ spec:
     syncOptions:
     - CreateNamespace=true
     - ServerSideApply=true
-

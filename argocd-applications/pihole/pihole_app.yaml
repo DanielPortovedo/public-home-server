@@ -13,7 +13,7 @@ spec:
     helm:
       values: |
         image:
-          tag: "2026.05.0"
+          tag: "2026.07.2"
 
         resources:
           requests:

@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: home-assistant-application
+  namespace: argocd
+spec:
+  project: default
+  sources:
+  - repoURL: 'https://github.com/DanielPortovedo/home_server'
+    path: argocd-applications/home-assistant/home-assistant-resources
+    targetRevision: HEAD
+
+  - repoURL: http://pajikos.github.io/home-assistant-helm-chart/
+    chart: home-assistant
+    targetRevision: 0.3.74
+    helm:
+      values: |
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+              - NET_ADMIN
+              - NET_RAW
+              - NET_BROADCAST
+
+        persistence:
+          enabled: true
+
+          existingClaim: home-config-pvc
+
+        hostNetwork: true
+
+        configuration:
+          enabled: true
+
+          forceInit: true
+
+          trusted_proxies:
+            - 10.42.0.0/24
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - 127.0.0.0/8
+        ingress:
+          enabled: true
+          className: traefik
+          
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt
+
+          tls:
+            - hosts:
+              - home.dani-porto.com
+              secretName: home-cert
+
+          hosts:
+            - host: home.dani-porto.com
+              paths:
+                - path: /
+                  pathType: ImplementationSpecific
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: home-assistant
+  syncPolicy:
+    syncOptions:
+    - ServerSideApply=true
+    - CreateNamespace=true

@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nextcloud-application
+  namespace: argocd
+spec:
+  project: default
+  sources:
+  - repoURL: 'https://github.com/DanielPortovedo/home_server'
+    path: argocd-applications/nextcloud/nextcloud_resources
+    targetRevision: HEAD
+
+  - repoURL: https://nextcloud.github.io/helm
+    chart: nextcloud
+    targetRevision: 9.2.5
+    helm:
+      values: |
+        ingress:
+          enabled: true
+          className: "traefik"
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt
+          hosts:
+            - host: nextcloud.dani-porto.com
+              paths:
+                - path: /
+                  pathType: ImplementationSpecific
+          tls:
+            - hosts:
+                - nextcloud.dani-porto.com
+              secretName: nextcloud-cert
+
+        phpClientHttpsFix:
+          enabled: true
+
+        nextcloud:
+          host: nextcloud.dani-porto.com
+          existingSecret:
+            enabled: true
+            secretName: nextcloud-creds
+
+        internalDatabase:
+          enabled: false
+
+        externalDatabase:
+          enabled: true
+          type: postgresql
+          existingSecret:
+            enabled: true
+            secretName: nextcloud-db-creds
+            usernameKey: username
+            passwordKey: password
+            hostKey: host
+            databaseKey: database-name
+        
+        cronjob:
+          enabled: true
+
+        persistence:
+          enabled: true
+
+          existingClaim: nextcloud-pvc
+
+        prometheus:
+          serviceMonitor:
+            enabled: false
+            interval: 60s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nextcloud
+  syncPolicy:
+    syncOptions:
+    - ServerSideApply=true
+    - CreateNamespace=true

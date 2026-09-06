@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://immich-app.github.io/immich-charts
     chart: immich
-    targetRevision: 0.11.1
+    targetRevision: 0.12.0
 
     helm:
       values: |
@@ -17,7 +17,7 @@ spec:
             containers:
               main:
                 image:
-                  tag: v2.7.5
+                  tag: v3.1.0
                 env:
                   REDIS_HOSTNAME: '{{ printf "%s-valkey" .Release.Name }}'
                   IMMICH_MACHINE_LEARNING_URL: '{{ printf "http://%s-machine-learning:3003" .Release.Name }}'

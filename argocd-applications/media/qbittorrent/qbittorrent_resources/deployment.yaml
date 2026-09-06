@@ -72,7 +72,7 @@ spec:
             periodSeconds: 60
 
         - name: qbittorrent
-          image: lscr.io/linuxserver/qbittorrent:latest
+          image: lscr.io/linuxserver/qbittorrent:5.2.2
           env:
             - name: PUID
               value: "1000"
