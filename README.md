@@ -16,6 +16,7 @@ Everything in this cluster is declarative. The desired state of every workload l
 - **TLS:** cert-manager + Let's Encrypt (DNS-01 via Cloudflare)
 - **Databases:** CloudNativePG (CNPG) operator
 - **Config management:** Kustomize + Helm
+- **Dependency updates:** Renovate, self-hosted in-cluster as a CronJob
 
 ## 🧩 GitOps Architecture
 
@@ -50,6 +51,7 @@ argocd-applications/     # The root Kustomization referencing every Argo CD Appl
 | 📊 Monitoring | **kube-prometheus-stack** | ✅ enabled | Prometheus + Grafana + Alertmanager. |
 | 📊 Monitoring | **fail2ban exporter** | ✅ enabled | Exposes fail2ban metrics to Prometheus. |
 | 🎮 Games | **Minecraft** | ⏸️ disabled | Game server. |
+| 🤖 Automation | **Renovate** | ✅ enabled | Self-hosted dependency bot, running as a daily CronJob, that raises PRs for Helm chart and container image bumps. |
 
 *Status reflects whether the Application is currently referenced (uncommented) in [`argocd-applications/kustomization.yaml`](argocd-applications/kustomization.yaml).*
 
@@ -83,6 +85,37 @@ Persistent data uses **statically provisioned `hostPath` PersistentVolumes** pai
 - Sensitive workloads (e.g. the Immich Postgres database) are restricted with Kubernetes **NetworkPolicies** — only Immich components and the CNPG operator namespace may reach port 5432.
 - A few workloads need the host network on purpose: **Home Assistant** and the **Matter server** (device / mDNS discovery), while **qBittorrent** sends all of its traffic through the Gluetun VPN sidecar.
 
+## 🤖 Dependency Updates
+
+Chart versions and image tags are kept current by a **self-hosted [Renovate](https://docs.renovatebot.com/)**, deployed from the OCI chart `ghcr.io/renovatebot/charts/renovate` by [`renovate_app.yaml`](argocd-applications/renovate/renovate_app.yaml). Like the other multi-source apps, it pairs the upstream chart with a [`values.yaml`](argocd-applications/renovate/renovate_resources/values.yaml) from this repo.
+
+- Renovate runs as a **CronJob** (daily at 02:00 `Europe/Zurich`), not a long-lived Deployment.
+- GitHub credentials come from a pre-existing secret in the `renovate` namespace (`renovate-github`, key `RENOVATE_TOKEN`), mounted with `envFrom` so each key becomes an env var.
+- Autodiscovery is **off**: the bot only reads the single repository named in its config — the private production repo, not this mirror — and opens at most 5 PRs at a time plus a **dependency dashboard** issue.
+- The repo needs no `renovate.json` of its own (`requireConfig: optional`); the managers and rules below all live in the bot's global config. Its own Git repo, used as the `ref: values` source of the multi-source apps, is in `ignoreDeps`.
+
+What gets updated:
+
+| Manager | What it matches |
+|---------|-----------------|
+| `argocd` | `chart` / `targetRevision` in Argo CD `Application`s under `argocd-applications/` |
+| `kubernetes` | `image: repo:tag` in plain manifests under `argocd-applications/` and `argocd-sources/` |
+| custom regex | Image tags written inline inside an Application's `helm.values` block |
+| custom regex | The pinned Argo CD `install.yaml` raw URL in [`argocd-sources/kustomization.yaml`](argocd-sources/kustomization.yaml) |
+
+The built-in managers cannot see a tag that only exists inside a Helm `values` string, so those are opted in with a comment directly above the tag — as done for the Immich server and Pi-hole images:
+
+```yaml
+# renovate: datasource=docker depName=pihole/pihole versioning=loose
+tag: "2026.09.0"
+```
+
+Policies worth knowing:
+
+- Helm chart bumps are labelled `helm-chart`.
+- All `lscr.io/linuxserver/*` images are grouped into one PR instead of several.
+- **Major** bumps of cert-manager, CloudNativePG, Immich and Nextcloud require approval on the dependency dashboard before a PR is raised — for the stateful and operator pieces a major is a migration, not a bump.
+
 ## 🛠️ Tech Stack
 
 - **Kubernetes:** k3s
@@ -92,6 +125,7 @@ Persistent data uses **statically provisioned `hostPath` PersistentVolumes** pai
 - **Certificates:** cert-manager, Let's Encrypt, Cloudflare
 - **Databases:** CloudNativePG (PostgreSQL)
 - **Observability:** Prometheus, Grafana, Alertmanager
+- **Dependency updates:** Renovate (self-hosted)
 
 ## 📁 Repository Structure
 
@@ -112,7 +146,8 @@ Persistent data uses **statically provisioned `hostPath` PersistentVolumes** pai
     ├── monitoring/                 # kube-prometheus-stack, fail2ban exporter
     ├── nextcloud/                  # Chart + volumes
     ├── pihole/
-    └── postgres/                   # CNPG operator + per-database ApplicationSet
+    ├── postgres/                   # CNPG operator + per-database ApplicationSet
+    └── renovate/                   # Self-hosted Renovate CronJob (chart + values)
 ```
 
 ## 🧾 License

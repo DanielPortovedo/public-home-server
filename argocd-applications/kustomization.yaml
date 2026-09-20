@@ -30,6 +30,9 @@ resources:
   # - ./minecraft/minecraft_app.yaml
   # - ./minecraft/minecraft_resources_app.yaml
 
+  # renovate
+  - ./renovate/renovate_app.yaml
+
   # monitoring
   - ./monitoring/kube_prometheus_stack_app.yaml
   - ./monitoring/kube_prometheus_stack_resources_app.yaml
