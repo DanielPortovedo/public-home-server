@@ -1,0 +1,128 @@
+cronjob:
+  # Renovate is a CronJob, not a Deployment. Once a day is plenty for a homelab.
+  schedule: '0 2 * * *'
+  timeZone: 'Europe/Zurich'
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  ttlSecondsAfterFinished: 86400
+  jobBackoffLimit: 1
+
+# Secret must exist in the `renovate` namespace and contain the key
+# RENOVATE_TOKEN (it is mounted with envFrom.secretRef, so each key
+# becomes an env var).
+existingSecret: renovate-github
+
+env:
+  LOG_LEVEL: 'info'
+
+renovate:
+
+  # This is the *self-hosted* (global) config: who am I, where do I look.
+  # Everything about WHAT to update lives in renovate.json inside the repo.
+  config: |
+    {
+      "platform": "github",
+      "endpoint": "https://api.github.com/",
+      "gitAuthor": "Renovate Bot <renovate@users.noreply.github.com>",
+      "autodiscover": false,
+      "repositories": [
+        "DanielPortovedo/home_server"
+      ],
+      "onboarding": false,
+      "requireConfig": "optional",
+      "baseDir": "/tmp/renovate",
+      "extends": [
+        "config:recommended",
+        ":dependencyDashboard"
+      ],
+      "timezone": "Europe/Zurich",
+      "prConcurrentLimit": 5,
+      "prHourlyLimit": 0,
+      "ignoreDeps": [
+        "https://github.com/DanielPortovedo/home_server"
+      ],
+      "argocd": {
+        "description": "Helm charts + targetRevision in spec.source and spec.sources of Argo CD Applications",
+        "managerFilePatterns": [
+          "/^argocd-applications/.+\\.yaml$/"
+        ]
+      },
+      "kubernetes": {
+        "description": "Plain manifests: `image: repo:tag` in Deployments etc.",
+        "managerFilePatterns": [
+          "/^argocd-applications/.+\\.ya?ml$/",
+          "/^argocd-sources/.+\\.ya?ml$/"
+        ]
+      },
+      "customManagers": [
+        {
+          "customType": "regex",
+          "description": "Image tags written inline in an Argo CD Application's helm.values block",
+          "managerFilePatterns": [
+            "/^argocd-applications/.+\\.ya?ml$/"
+          ],
+          "matchStrings": [
+            "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+versioning=(?<versioning>\\S+))?[^\\n]*\\n\\s*tag:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
+          ],
+          "datasourceTemplate": "{{{datasource}}}",
+          "depNameTemplate": "{{{depName}}}",
+          "currentValueTemplate": "{{{currentValue}}}",
+          "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}docker{{/if}}"
+        },
+        {
+          "customType": "regex",
+          "description": "Argo CD install manifests pinned by raw URL in argocd-sources/kustomization.yaml",
+          "managerFilePatterns": [
+            "/(^|/)kustomization\\.ya?ml$/"
+          ],
+          "matchStrings": [
+            "https://raw\\.githubusercontent\\.com/argoproj/argo-cd/(?<currentValue>v\\d+\\.\\d+\\.\\d+)/manifests/install\\.yaml"
+          ],
+          "depNameTemplate": "argoproj/argo-cd",
+          "datasourceTemplate": "github-releases"
+        }
+      ],
+      "packageRules": [
+        {
+          "description": "Label + clearer titles for Helm chart bumps",
+          "matchManagers": [
+            "argocd"
+          ],
+          "addLabels": [
+            "helm-chart"
+          ]
+        },
+        {
+          "description": "Group the *arr stack so you review one PR instead of three",
+          "matchPackageNames": [
+            "lscr.io/linuxserver/**"
+          ],
+          "groupName": "linuxserver *arr images"
+        },
+        {
+          "description": "Majors of stateful/operator things get their own PR and no automerge",
+          "matchPackageNames": [
+            "cloudnative-pg",
+            "cert-manager",
+            "immich",
+            "nextcloud"
+          ],
+          "matchUpdateTypes": [
+            "major"
+          ],
+          "dependencyDashboardApproval": true
+        }
+      ]
+    }
+
+
+# Renovate's image runs as uid 12021; fsGroup is what makes the cache PVC writable.
+securityContext:
+  runAsNonRoot: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    memory: 2Gi

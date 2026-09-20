@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: renovate
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Chart lives in an OCI registry -> repoURL without the oci:// prefix.
+    - repoURL: ghcr.io/renovatebot/charts
+      chart: renovate
+      targetRevision: 46.309.3
+      helm:
+        valueFiles:
+          - $values/argocd-applications/renovate/renovate_resources/values.yaml
+
+    - repoURL: 'https://github.com/DanielPortovedo/home_server'
+      targetRevision: HEAD
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: renovate
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
