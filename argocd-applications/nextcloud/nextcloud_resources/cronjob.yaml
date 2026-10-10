@@ -1,0 +1,115 @@
+# Daily backup of nextcloud to the Hetzner Storage Box via rsync over SSH.
+# First dumps the postgres DB (init container), then syncs the dump and the nextcloud volume (/opt/nextcloud).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nextcloud-backup
+  namespace: nextcloud
+spec:
+  schedule: "0 3 * * *"
+  timeZone: "Europe/Zurich"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            supplementalGroups: [33] # www-data, owner group of the nextcloud files
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: pg-dump
+              # Must match (or be newer than) the CNPG cluster's postgres major version
+              image: postgres:18.4-alpine
+              securityContext:
+                runAsUser: 70 # postgres user in the alpine image
+                runAsGroup: 70
+                runAsNonRoot: true
+                readOnlyRootFilesystem: true
+                allowPrivilegeEscalation: false
+                privileged: false
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: DB_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: nextcloud-db-creds
+                      key: host
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: nextcloud-db-creds
+                      key: database-name
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: nextcloud-db-creds
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: nextcloud-db-creds
+                      key: password
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  # host is stored as "<host>:<port>"
+                  export PGHOST="${DB_HOST%:*}" PGPORT="${DB_HOST##*:}"
+                  # Custom-format archive with gzip-compressed contents: restore with `pg_restore`, not `gunzip`
+                  pg_dump --format=custom --compress=gzip:9 --file="/backup/nextcloud-$(date -u +%Y%m%dT%H%M%SZ).dump.gzip"
+              volumeMounts:
+                - name: db-dump
+                  mountPath: /backup
+          containers:
+            - name: rsync
+              image: alpine:3.24
+              securityContext:
+                # root is needed for `apk add`; nextcloud files are www-data (33) owned with group-only
+                # read access, so they're read through supplementalGroups instead of capabilities.
+                allowPrivilegeEscalation: false
+                privileged: false
+                capabilities:
+                  drop: ["ALL"]
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  apk add --no-cache rsync openssh-client
+                  SSH="ssh -p 23 -i /ssh/id_ed25519 -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/known_hosts"
+                  REMOTE=uXXXXXX@uXXXXXX.your-storagebox.de:nextcloud
+                  
+                  # Nextcloud DB not as important as immich, we can store only one
+                  rsync -az --mkpath --delete --stats -e "$SSH" /backup/ "$REMOTE/db/"
+
+                  # Store nextcloud data
+                  rsync -az --mkpath --delete --partial --info=progress2 --stats -e "$SSH" /data/ "$REMOTE/data/"
+              volumeMounts:
+                - name: db-dump
+                  mountPath: /backup
+                  readOnly: true
+                - name: nextcloud-data
+                  mountPath: /data
+                  readOnly: true
+                - name: ssh-key
+                  mountPath: /ssh
+                  readOnly: true
+          volumes:
+            - name: db-dump
+              emptyDir: {}
+            - name: nextcloud-data
+              persistentVolumeClaim:
+                claimName: nextcloud-pvc
+                readOnly: true
+            - name: ssh-key
+              secret:
+                secretName: storagebox-ssh-key
+                defaultMode: 0400

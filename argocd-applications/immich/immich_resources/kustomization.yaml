@@ -5,3 +5,4 @@ resources:
   - ./ingress.yaml
   - ./volume.yaml
   - ./ingress_local.yaml
+  - ./cronjob.yaml

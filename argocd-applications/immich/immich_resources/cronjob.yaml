@@ -1,0 +1,55 @@
+# Daily backup of the immich volume (/opt/immich) to the Hetzner Storage Box via rsync over SSH.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: immich-backup
+  namespace: immich
+spec:
+  schedule: "0 3 * * *"
+  timeZone: "Europe/Zurich"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          automountServiceAccountToken: false
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: rsync
+              image: alpine:3.24
+              securityContext:
+                allowPrivilegeEscalation: false
+                privileged: false
+                capabilities:
+                  drop: ["ALL"]
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  apk add --no-cache rsync openssh-client
+                  rsync -az --delete --partial --info=progress2 --stats \
+                    -e "ssh -p 23 -i /ssh/id_ed25519 -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/known_hosts" \
+                    /data/ uXXXXXX@uXXXXXX.your-storagebox.de:immich/
+              volumeMounts:
+                - name: immich-data
+                  mountPath: /data
+                  readOnly: true
+                - name: ssh-key
+                  mountPath: /ssh
+                  readOnly: true
+          volumes:
+            - name: immich-data
+              persistentVolumeClaim:
+                claimName: immich-pvc
+                readOnly: true
+            - name: ssh-key
+              secret:
+                secretName: storagebox-ssh-key
+                defaultMode: 0400
