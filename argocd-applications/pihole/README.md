@@ -23,7 +23,7 @@ sudo systemctl restart systemd-resolved
 sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 ```
 
-## HOW TO RECOVER
+## RECOVER
 
 1. Re-enable the stub listener
 
