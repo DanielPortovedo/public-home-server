@@ -9,7 +9,7 @@ spec:
     # Chart lives in an OCI registry -> repoURL without the oci:// prefix.
     - repoURL: ghcr.io/renovatebot/charts
       chart: renovate
-      targetRevision: 46.309.3
+      targetRevision: 46.352.0
       helm:
         valueFiles:
           - $values/argocd-applications/renovate/renovate_resources/values.yaml
@@ -22,6 +22,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: renovate
   syncPolicy:
+    automated:
+      enabled: true
+      prune: false
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true

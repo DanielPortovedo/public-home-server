@@ -116,9 +116,9 @@ renovate:
     }
 
 
-# Renovate's image runs as uid 12021; fsGroup is what makes the cache PVC writable.
 securityContext:
   runAsNonRoot: true
+  seccompProfile: { type: RuntimeDefault }
 
 resources:
   requests:

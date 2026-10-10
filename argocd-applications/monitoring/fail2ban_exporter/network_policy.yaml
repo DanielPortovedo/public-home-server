@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: fail2ban-metrics-exporter
+spec:
+  podSelector:
+    matchLabels:
+      app: fail2ban-metrics-exporter
+  policyTypes:
+    - Ingress
+    # No egress rules: the exporter only talks to the fail2ban unix socket
+    - Egress
+  ingress:
+    # Only Prometheus (same namespace) may scrape metrics
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9191
